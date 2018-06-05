@@ -62,14 +62,18 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.stopButton.clicked.connect(self.stop)
         self.actionSettings.triggered.connect(self.ProfileMenuStart)
         self.actionClose.triggered.connect(self.closeEvent)
-        #check boxes
-        self.heatingCheck.setChecked(False)
-        self.coolingCheck.setChecked(False)
         self.setTemp.setText(str(self.settempvar))
-        self.setTemp.textChanged.connect(self.settempoverride)
+        #set up LEDs, remove button border, default off
+        self.heatLED.setStyleSheet('border:none')
+        self.coolLED.setStyleSheet('border:none')
+        self.LEDon = QtGui.QIcon('red-led-on-hi.png')
+        self.LEDoff = QtGui.QIcon('red-led-off-hi.png')
+        self.heatLED.setIcon(self.LEDoff)
+        self.coolLED.setIcon(self.LEDoff)
         #auto updates on change
+        self.setTemp.textChanged.connect(self.settempoverride)
 
-        
+
     def start(self):
         if not self.started:
             self.started = True
@@ -84,43 +88,44 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.started = False
         self.tempDisplay.setText("")
         self.get_thread.terminate()
-        self.coolingCheck.setChecked(False)
-        self.heatingCheck.setChecked(False)
+        self.heatLED.setIcon(self.LEDoff)
+        self.coolLED.setIcon(self.LEDoff)
         
     def disp_temp(self, temp_form):
         self.tempDisplay.setText(temp_form + " Farenheit")
 
     def heating_cooling(self, temp):
-        target_temp = self.settempvar
-        #temp = float(temp_form)
+        settemp = self.settempvar
         #Cooling Condition
-        if (temp > (target_temp+self.cooldelta) and self.coolON == False):
+        if (temp > (settemp+self.cooldelta) and self.coolON == False):
             self.coolON = True
             self.heatON = False
-            self.coolingCheck.setChecked(self.coolON)
-            self.heatingCheck.setChecked(self.heatON)
+            self.heatLED.setIcon(self.LEDoff)
+            self.coolLED.setIcon(self.LEDon)
         #Heating Condition
-        elif (temp < (target_temp-self.heatdelta) and self.heatON == False):
+        elif (temp < (settemp-self.heatdelta) and self.heatON == False):
             self.heatON = True
             self.coolON = False
-            self.coolingCheck.setChecked(self.coolON)
-            self.heatingCheck.setChecked(self.heatON)
+            self.heatLED.setIcon(self.LEDon)
+            self.coolLED.setIcon(self.LEDoff)
         
-        elif (temp > target_temp and self.coolON == True):
+        #continue cooling until set temperature
+        elif (temp > settemp and self.coolON == True):
             print('cooling')
-            
-        elif (temp < target_temp and self.heatON == True):
+         
+        #continue heating until set temperature
+        elif (temp < settemp and self.heatON == True):
             print('heating')
 
         else:
             self.heatON = False
             self.coolON = False
-            self.coolingCheck.setChecked(self.coolON)
-            self.heatingCheck.setChecked(self.heatON)
+            self.heatLED.setIcon(self.LEDoff)
+            self.coolLED.setIcon(self.LEDoff)
 
     def ProfileMenuStart(self):
         self.profilemenustart = ProfileSetupMenu(self)
-        self.connect(self.profilemenustart, QtCore.SIGNAL("setTempProfile1"), self.updateProfile)
+        self.connect(self.profilemenustart, QtCore.SIGNAL("setTempProfile"), self.updateProfile)
         self.profilemenustart.show()
     
     def updateProfile(self, setTempProfile, coolDeltaProfile, heatDeltaProfile):
@@ -137,16 +142,8 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.settempvar = float(self.setTemp.text())
         return self.settempvar
         
-        
     def closeEvent(self, event):
         self.close()
-        
-
-'''
-            if tempthread.temp > 68:
-                self.coolingCheck.setChecked(True)    
-            #time.sleep(1)
-'''
 
 class ProfileSetupMenu(QtGui.QWidget, Ui_ProfileSetup):
     def __init__(self, parent=None):
@@ -167,11 +164,10 @@ class ProfileSetupMenu(QtGui.QWidget, Ui_ProfileSetup):
         setTempProfile = float(self.setTempProfile.text())
         coolDeltaProfile = float(self.coolDelta.text())
         heatDeltaProfile = float(self.heatDelta.text())
-        self.emit(QtCore.SIGNAL("setTempProfile1"), setTempProfile, coolDeltaProfile, heatDeltaProfile)
+        self.emit(QtCore.SIGNAL("setTempProfile"), setTempProfile, coolDeltaProfile, heatDeltaProfile)
         #float_coolDelta = float(coolDelta)
         #float_heatDelta = float(heatDelta)
         self.close()
-        
         
     def closeEvent(self, event):
         self.close()

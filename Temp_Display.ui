@@ -66,42 +66,22 @@
        <number>0</number>
       </property>
       <item>
-       <widget class="QLabel" name="mdsLabel">
-        <property name="text">
-         <string>Heating?</string>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="heatingCheck">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string/>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QLabel" name="wpiLabel">
+       <widget class="QPushButton" name="heatLED">
         <property name="enabled">
          <bool>true</bool>
         </property>
         <property name="text">
-         <string>Cooling?</string>
+         <string>Heating</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="coolingCheck">
+       <widget class="QPushButton" name="coolLED">
         <property name="enabled">
-         <bool>false</bool>
+         <bool>true</bool>
         </property>
         <property name="text">
-         <string/>
-        </property>
-        <property name="checkable">
-         <bool>true</bool>
+         <string>Cooling</string>
         </property>
        </widget>
       </item>
