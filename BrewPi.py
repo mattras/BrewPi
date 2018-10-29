@@ -32,12 +32,29 @@ class tempThread(QThread):
             temp_str = raw_data[1][temp_pos+2:]
             temp = float(temp_str)/1000
             temp_f = temp*9/5+32
-            return temp_f
+        #Test random temperatures if no probe hooked up        
+        #temp_f = random.randrange(60, 80)
+        return temp_f
+
+    def write_temp(self, temp_form, datafile):
+        os.chdir('data')
+        fname = time.strftime('%d%m%Y')
+        f=open(datafile + ".csv", 'a')
+        f.write(time.strftime('%S%M%H%d') + ',' + temp_form + "\n")
+        f.close()
+        os.chdir("..")
 
     def run(self):
+        #setup data file
+        os.chdir('data')
+        datafile = time.strftime('%M%H%d%m%Y')
+        f=open(datafile + ".csv", 'w')
+        f.close()
+        os.chdir("..") 
         while True:
             temp = self._get_temperature()
             temp_form = "{0:.2f}".format(temp)
+            self.write_temp(temp_form, datafile)
             self.emit(QtCore.SIGNAL("disp_temp(QString)"), temp_form)
             self.emit(QtCore.SIGNAL("float_temp"), temp)
             #q.put(temp_form)
@@ -79,7 +96,7 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
             self.started = True
             self.get_thread = tempThread()
             self.connect(self.get_thread, QtCore.SIGNAL("disp_temp(QString)"), self.disp_temp)
-            self.connect(self.get_thread, QtCore.SIGNAL("float_temp"), self.heating_cooling) 
+            self.connect(self.get_thread, QtCore.SIGNAL("float_temp"), self.heating_cooling)
             self.get_thread.start()
         else:
             print('Already started')
