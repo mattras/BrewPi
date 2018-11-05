@@ -1,4 +1,5 @@
 import sys, os, time, glob, random
+import pyqtgraph as pg
 from threading import Thread
 from PyQt4 import QtCore, QtGui, uic
 from PyQt4.QtCore import QThread
@@ -16,6 +17,20 @@ ProfileMenu = "ProfileSetup.ui"
 Ui_MainWindow, QtBaseClass = uic.loadUiType(qtCreatorFile)
 Ui_ProfileSetup, QtBaseClass = uic.loadUiType(ProfileMenu)
 
+class DataCache:
+
+    def __init__(self):
+        self.cache = []
+        self.max_cache = 10
+    
+    def loadcache(self, inputData):
+        if len(self.cache) == self.max_cache:
+            del self.cache[0]
+        self.cache.append(inputData)
+    
+    def getcache(self):
+        return self.cache
+
 class tempThread(QThread):
     def __init__(self):
         QThread.__init__(self)
@@ -24,40 +39,33 @@ class tempThread(QThread):
         self.wait()
     
     def _get_temperature(self):
-        f = open(tempfile)
-        raw_data = f.readlines()
-        if 'YES' in raw_data[0]:
-            tempvalid = True
-            temp_pos = raw_data[1].find('t=')
-            temp_str = raw_data[1][temp_pos+2:]
-            temp = float(temp_str)/1000
-            temp_f = temp*9/5+32
+        # f = open(tempfile)
+        # raw_data = f.readlines()
+        # if 'YES' in raw_data[0]:
+        #     tempvalid = True
+        #     temp_pos = raw_data[1].find('t=')
+        #     temp_str = raw_data[1][temp_pos+2:]
+        #     temp = float(temp_str)/1000
+        #     temp_f = temp*9/5+32
         #Test random temperatures if no probe hooked up        
-        #temp_f = random.randrange(60, 80)
+        temp_f = random.randrange(60, 80)
         return temp_f
 
     def write_temp(self, temp_form, datafile):
-        os.chdir('data')
-        fname = time.strftime('%d%m%Y')
-        f=open(datafile + ".csv", 'a')
-        f.write(time.strftime('%S%M%H%d') + ',' + temp_form + "\n")
-        f.close()
-        os.chdir("..")
+        with open(os.path.join('data', datafile), 'a') as f:
+            f.write(time.strftime('%Y%m%d%H%M%S') + ',' + temp_form + "\n")
 
     def run(self):
         #setup data file
-        os.chdir('data')
-        datafile = time.strftime('%M%H%d%m%Y')
-        f=open(datafile + ".csv", 'w')
-        f.close()
-        os.chdir("..") 
+        datafile = time.strftime('%Y%m%d%H%M') + '.csv'
+        #setup recent input data caches
         while True:
             temp = self._get_temperature()
             temp_form = "{0:.2f}".format(temp)
+            #send data
             self.write_temp(temp_form, datafile)
             self.emit(QtCore.SIGNAL("disp_temp(QString)"), temp_form)
             self.emit(QtCore.SIGNAL("float_temp"), temp)
-            #q.put(temp_form)
             print(temp_form)
             self.sleep(1)
 
@@ -89,7 +97,13 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         self.coolLED.setIcon(self.LEDoff)
         #auto updates on change
         self.setTemp.textChanged.connect(self.settempoverride)
+        #setup data caches
+        self.tempCache = DataCache()
+        self.timeCache = DataCache()
 
+        # self.menuIcon = QtGui
+        self.guiIcon.setStyleSheet('border:none')
+        self.guiIcon.setIcon(QtGui.QIcon('hop.png'))
 
     def start(self):
         if not self.started:
@@ -110,6 +124,12 @@ class MyApp(QtGui.QMainWindow, Ui_MainWindow):
         
     def disp_temp(self, temp_form):
         self.tempDisplay.setText(temp_form + " Farenheit")
+        # load caches
+        self.tempCache.loadcache(float(temp_form))
+        self.timeCache.loadcache(int(time.strftime('%Y%m%d%H%M%S')))
+        # update plot
+        self.plotWindow.plot(self.timeCache.getcache(), self.tempCache.getcache(), clear = True)
+
 
     def heating_cooling(self, temp):
         settemp = self.settempvar
